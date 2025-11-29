@@ -20,7 +20,10 @@ jobs:
       - run: npx prisma generate --schema=prisma/schema.prisma
       - run: npx prisma generate --schema=prisma/edge.prisma
       - run: npm run lint
-      # - run: npm test # Uncomment when tests are added
+      - run: npm test
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - run: npx playwright test
 
   commitlint:
     runs-on: ubuntu-latest
