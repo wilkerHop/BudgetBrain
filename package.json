@@ -12,10 +12,10 @@
     "@aws-sdk/client-s3": "^3.940.0",
     "@libsql/client": "^0.15.15",
     "@prisma/client": "^6.19.0",
-    "next": "16.0.5",
+    "next": "^16.0.5",
     "prisma": "^6.19.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -23,10 +23,10 @@
     "@commitlint/config-conventional": "^20.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "eslint": "^9",
-    "eslint-config-next": "16.0.5",
+    "eslint-config-next": "^16.0.5",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
     "typescript": "^5"
