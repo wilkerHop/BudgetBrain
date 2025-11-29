@@ -9,6 +9,16 @@ on:
 jobs:
   health-check:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "postgresql://user:password@localhost:5432/db"
+      TURSO_DATABASE_URL: "libsql://db.turso.io"
+      TURSO_AUTH_TOKEN: "dummy"
+      OPENAI_API_KEY: "dummy"
+      TAVILY_API_KEY: "dummy"
+      BROWSERLESS_API_KEY: "dummy"
+      R2_ACCOUNT_ID: "dummy"
+      R2_ACCESS_KEY_ID: "dummy"
+      R2_SECRET_ACCESS_KEY: "dummy"
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js
