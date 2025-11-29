@@ -17,7 +17,8 @@ export async function analyzeBudget(userRequest: string, budget: number) {
         deepSearch,
         dealValidator,
       },
-      // maxSteps: 5, // Allow multi-step reasoning
+      // @ts-expect-error maxSteps is missing from type definition but supported
+      maxSteps: 5, // Allow multi-step reasoning
     });
 
     // In a real app, we would parse the result and save structured data to DB

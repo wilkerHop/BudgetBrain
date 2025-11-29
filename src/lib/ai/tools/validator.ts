@@ -6,7 +6,7 @@ const validatorSchema = z.object({
   url: z.string().describe('The URL of the product page'),
 });
 
-type ValidatorResult = {
+export type ValidatorResult = {
   title: string;
   price: string;
   verified: boolean;

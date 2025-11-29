@@ -1,65 +1,148 @@
-import Image from "next/image";
+'use client';
+
+import { analyzeBudget } from '@/app/actions/analyze-budget';
+import { AgentStatus } from '@/components/agent-status';
+import { BudgetForm } from '@/components/budget-form';
+import { Deal, DealFeed } from '@/components/deal-feed';
+import { Toaster } from '@/components/ui/sonner';
+import type { SearchResult } from '@/lib/ai/tools/search';
+import type { ValidatorResult } from '@/lib/ai/tools/validator';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function Home() {
+  const [status, setStatus] = useState<'idle' | 'searching' | 'validating' | 'analyzing' | 'complete' | 'error'>('idle');
+  const [logs, setLogs] = useState<string[]>([]);
+  const [analysis, setAnalysis] = useState('');
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleBudgetAnalysis = async (data: { query: string; maxBudget: number; priority: 'price' | 'quality' }) => {
+    setIsLoading(true);
+    setStatus('searching');
+    setLogs(['Initializing BudgetBrain agent...', `Intent: Find ${data.query} under $${data.maxBudget}`]);
+    setAnalysis('');
+    setDeals([]);
+
+    try {
+      // Call Server Action
+      const response = await analyzeBudget(data.query, data.maxBudget);
+      
+      // Process Steps for Logs and Deals
+      const newLogs: string[] = [...logs];
+      const foundDeals: Deal[] = [];
+
+      if (response.steps) {
+        for (const step of response.steps) {
+          // Log Tool Calls
+          if (step.toolCalls && step.toolCalls.length > 0) {
+            for (const call of step.toolCalls) {
+              newLogs.push(`🛠️ Calling tool: ${call.toolName}`);
+              if (call.toolName === 'deepSearch') {
+                setStatus('searching');
+              } else if (call.toolName === 'dealValidator') {
+                setStatus('validating');
+              }
+            }
+          }
+
+          // Log Tool Results and Extract Deals
+          if (step.toolResults && step.toolResults.length > 0) {
+            for (const result of step.toolResults) {
+              newLogs.push(`✅ Tool ${result.toolName} completed.`);
+              
+              if (result.toolName === 'deepSearch') {
+                const searchResults = result.output as SearchResult;
+                if (Array.isArray(searchResults)) {
+                  newLogs.push(`Found ${searchResults.length} potential candidates.`);
+                  // Map search results to deals
+                  searchResults.forEach((item) => {
+                    if (item.url && item.title) {
+                      foundDeals.push({
+                        title: item.title,
+                        price: 'Checking...', // Placeholder
+                        url: item.url,
+                        source: new URL(item.url).hostname.replace('www.', ''),
+                      });
+                    }
+                  });
+                }
+              }
+
+              if (result.toolName === 'dealValidator') {
+                const validatorResult = result.output as ValidatorResult;
+                
+                if ('error' in validatorResult) {
+                     newLogs.push(`Validation failed: ${validatorResult.error}`);
+                } else {
+                    newLogs.push(`Verified: ${validatorResult.title.substring(0, 40)}...`);
+                    
+                    // Update existing deal or add new
+                    const existingIndex = foundDeals.findIndex(d => d.url === validatorResult.url);
+                    const existingDeal = foundDeals[existingIndex];
+                    
+                    if (existingIndex >= 0 && existingDeal) {
+                      foundDeals[existingIndex] = {
+                        ...existingDeal,
+                        price: validatorResult.price || 'N/A',
+                        verified: validatorResult.verified,
+                        title: validatorResult.title || existingDeal.title,
+                      };
+                    } else {
+                       foundDeals.push({
+                        title: validatorResult.title || 'Unknown Product',
+                        price: validatorResult.price || 'N/A',
+                        url: validatorResult.url,
+                        verified: validatorResult.verified,
+                       });
+                    }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      setStatus('analyzing');
+      setLogs(prev => [...prev, ...newLogs.slice(prev.length), '🧠 Generating final analysis...']);
+      
+      // Artificial delay for "Analyzing" visualization if needed, but we have the result.
+      
+      setAnalysis(response.result);
+      setDeals(foundDeals);
+      setStatus('complete');
+      setLogs(prev => [...prev, '✨ Analysis complete.']);
+      toast.success('Analysis complete!');
+
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+      setLogs(prev => [...prev, '❌ Error occurred during analysis.']);
+      toast.error('Failed to analyze budget. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-background p-4 md:p-8 font-sans">
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="text-center space-y-2 mb-12">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight lg:text-7xl bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            BudgetBrain
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Your AI agent for finding the best tech deals without breaking the bank.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <BudgetForm onSubmit={handleBudgetAnalysis} isLoading={isLoading} />
+
+        <AgentStatus status={status} logs={logs} />
+
+        <DealFeed analysis={analysis} deals={deals} />
+      </div>
+      <Toaster />
+    </main>
   );
 }

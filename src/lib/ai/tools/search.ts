@@ -9,7 +9,7 @@ const searchSchema = z.object({
   search_depth: z.enum(['basic', 'advanced']).default('advanced'),
 });
 
-type SearchResult = Awaited<ReturnType<typeof tvly.search>>['results'];
+export type SearchResult = Awaited<ReturnType<typeof tvly.search>>['results'];
 
 export const deepSearch = tool<z.infer<typeof searchSchema>, SearchResult>({
   description: 'Search the web for products, prices, and reviews.',
