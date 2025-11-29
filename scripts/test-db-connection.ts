@@ -19,7 +19,7 @@ async function main() {
   const edgePrisma = new EdgePrismaClient();
   try {
     // await edgePrisma.$connect(); // Connect might fail without valid URL/adapter
-    console.log("✅ Turso client initialized (connection requires valid URL/adapter)");
+    console.log("✅ Turso client initialized (connection requires valid URL/adapter)", edgePrisma);
   } catch (e) {
     console.error("❌ Turso client initialization failed:", e);
   }
