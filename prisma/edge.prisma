@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/edge-client"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model SearchCache {
+  id        String   @id @default(uuid())
+  query     String   @unique
+  results   String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}

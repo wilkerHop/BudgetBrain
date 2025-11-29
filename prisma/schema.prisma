@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preferences Json?
+
+  dealDossiers DealDossier[]
+  budgetConstraints BudgetConstraint[]
+}
+
+model DealDossier {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  query     String
+  createdAt DateTime @default(now())
+  
+  vettedProducts VettedProduct[]
+}
+
+model VettedProduct {
+  id             String      @id @default(uuid())
+  dossierId      String
+  dossier        DealDossier @relation(fields: [dossierId], references: [id])
+  
+  name           String
+  price          Decimal
+  currency       String
+  url            String
+  imageUrl       String?
+  
+  verificationScore Int // 0-100
+  sentimentSummary  String
+  budgetGap         Decimal // Positive if under budget, negative if over
+  
+  createdAt      DateTime @default(now())
+  
+  priceTimeline  PriceTimeline[]
+}
+
+model PriceTimeline {
+  id              String        @id @default(uuid())
+  vettedProductId String
+  vettedProduct   VettedProduct @relation(fields: [vettedProductId], references: [id])
+  
+  price           Decimal
+  recordedAt      DateTime      @default(now())
+}
+
+model BudgetConstraint {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  category  String?
+  hardLimit Decimal
+  softLimit Decimal?
+  
+  createdAt DateTime @default(now())
+}
