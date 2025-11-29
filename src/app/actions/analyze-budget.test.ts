@@ -14,7 +14,7 @@ vi.mock('@/lib/ai/config', () => ({ model: {}, SYSTEM_PROMPT: 'prompt' }));
 
 describe('analyzeBudget Action', () => {
   it('should call generateText with correct prompt including budget', async () => {
-    (generateText as any).mockResolvedValue({
+    (generateText as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: 'Analysis result',
       steps: [],
     });
@@ -28,7 +28,7 @@ describe('analyzeBudget Action', () => {
   });
 
   it('should handle errors', async () => {
-    (generateText as any).mockRejectedValue(new Error('AI Error'));
+    (generateText as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('AI Error'));
 
     await expect(analyzeBudget('fail', 100)).rejects.toThrow('Failed to analyze budget');
   });
