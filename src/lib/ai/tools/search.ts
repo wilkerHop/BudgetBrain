@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { tavily } from '@tavily/core';
 import { tool } from 'ai';
 import { z } from 'zod';
@@ -10,10 +9,12 @@ const searchSchema = z.object({
   search_depth: z.enum(['basic', 'advanced']).default('advanced'),
 });
 
-export const deepSearch = tool({
+type SearchResult = Awaited<ReturnType<typeof tvly.search>>['results'];
+
+export const deepSearch = tool<z.infer<typeof searchSchema>, SearchResult>({
   description: 'Search the web for products, prices, and reviews.',
-  parameters: searchSchema,
-  execute: async ({ query, search_depth }: any) => {
+  inputSchema: searchSchema,
+  execute: async ({ query, search_depth }) => {
     try {
       const response = await tvly.search(query, {
         search_depth,
@@ -25,4 +26,4 @@ export const deepSearch = tool({
       return [];
     }
   },
-} as any);
+});

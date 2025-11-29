@@ -20,7 +20,7 @@
     "puppeteer-core": "^24.31.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "zod": "^4.1.13"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",

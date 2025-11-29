@@ -1,5 +1,4 @@
 import { tool } from 'ai';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import puppeteer from 'puppeteer-core';
 import { z } from 'zod';
 
@@ -7,10 +6,17 @@ const validatorSchema = z.object({
   url: z.string().describe('The URL of the product page'),
 });
 
-export const dealValidator = tool({
+type ValidatorResult = {
+  title: string;
+  price: string;
+  verified: boolean;
+  url: string;
+} | { error: string };
+
+export const dealValidator = tool<z.infer<typeof validatorSchema>, ValidatorResult>({
   description: 'Visit a product URL to verify the current price and availability.',
-  parameters: validatorSchema,
-  execute: async ({ url }: any) => {
+  inputSchema: validatorSchema,
+  execute: async ({ url }) => {
     let browser;
     try {
       browser = await puppeteer.connect({
@@ -43,4 +49,4 @@ export const dealValidator = tool({
       }
     }
   },
-} as any);
+});
