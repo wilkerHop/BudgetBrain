@@ -69,3 +69,16 @@ model BudgetConstraint {
   
   createdAt DateTime @default(now())
 }
+
+model QueryCache {
+  id        String   @id @default(uuid())
+  queryHash String   @unique
+  query     String
+  budget    Decimal
+  result    String   @db.Text
+  steps     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([queryHash])
+}
