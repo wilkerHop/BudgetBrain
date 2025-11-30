@@ -19,6 +19,7 @@ jobs:
       R2_ACCOUNT_ID: "dummy"
       R2_ACCESS_KEY_ID: "dummy"
       R2_SECRET_ACCESS_KEY: "dummy"
+      GOOGLE_GENERATIVE_AI_API_KEY: "dummy"
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js

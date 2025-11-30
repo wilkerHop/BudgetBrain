@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { analyzeBudget } from './analyze-budget';
 
 vi.mock('ai', () => ({
@@ -31,6 +31,15 @@ vi.mock('@/lib/db', () => ({
 }));
 
 describe('analyzeBudget Action', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    (generateText as unknown as ReturnType<typeof vi.fn>).mockClear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should call generateText with correct prompt including budget', async () => {
     (generateText as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       text: 'Analysis result',
@@ -48,9 +57,15 @@ describe('analyzeBudget Action', () => {
     expect(result).toEqual({ result: 'Analysis result', steps: [] });
   });
 
-  it('should handle errors', async () => {
+  it('should retry on error and eventually fail', async () => {
     (generateText as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('AI Error'));
 
-    await expect(analyzeBudget('fail', 100)).rejects.toThrow('Failed to analyze budget');
+    const promise = analyzeBudget('fail', 100);
+    
+    // Fast-forward through retries
+    await vi.runAllTimersAsync();
+
+    await expect(promise).rejects.toThrow('Failed to analyze budget');
+    expect(generateText).toHaveBeenCalledTimes(3);
   });
 });
