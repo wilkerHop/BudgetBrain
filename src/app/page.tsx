@@ -124,7 +124,15 @@ export default function Home() {
       
       // Artificial delay for "Analyzing" visualization if needed, but we have the result.
       
-      setAnalysis(response.result);
+      let finalAnalysis = response.result;
+      
+      if (foundDeals.length === 0) {
+        const noResultsMsg = "\n\n⚠️ I couldn't find any specific deals matching your criteria at this moment. This might be due to high traffic on the search provider. Please try again in a few seconds.";
+        finalAnalysis = finalAnalysis ? finalAnalysis + noResultsMsg : noResultsMsg;
+        newLogs.push('⚠️ No results found.');
+      }
+
+      setAnalysis(finalAnalysis);
       setDeals(foundDeals);
       setStatus('complete');
       setLogs(prev => [...prev, '✨ Analysis complete.']);
