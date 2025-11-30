@@ -104,13 +104,30 @@ export async function analyzeBudget(userRequest: string, budget: number) {
     }
 
     // Sanitize steps for client-side consumption (Next.js serialization)
-    const sanitizedSteps = steps ? (steps as any[]).map(step => ({
-      toolCalls: step.toolCalls ? step.toolCalls.map((tc: any) => ({
+    interface ToolCall {
+      toolName: string;
+      args: unknown;
+      toolCallId: string;
+    }
+
+    interface ToolResult {
+      toolName: string;
+      toolCallId: string;
+      output: unknown;
+    }
+
+    interface Step {
+      toolCalls?: ToolCall[];
+      toolResults?: ToolResult[];
+    }
+
+    const sanitizedSteps = steps ? (steps as unknown as Step[]).map(step => ({
+      toolCalls: step.toolCalls ? step.toolCalls.map((tc) => ({
         toolName: tc.toolName,
         args: tc.args,
         toolCallId: tc.toolCallId
       })) : [],
-      toolResults: step.toolResults ? step.toolResults.map((tr: any) => ({
+      toolResults: step.toolResults ? step.toolResults.map((tr) => ({
         toolName: tr.toolName,
         toolCallId: tr.toolCallId,
         output: tr.output
