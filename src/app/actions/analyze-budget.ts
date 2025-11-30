@@ -8,6 +8,9 @@ import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
 import { generateText } from 'ai';
 
+// Allow streaming responses up to 60 seconds (Vercel limit)
+export const maxDuration = 60;
+
 export async function analyzeBudget(userRequest: string, budget: number) {
   try {
     // 1. Check Cache
@@ -31,7 +34,7 @@ export async function analyzeBudget(userRequest: string, budget: number) {
             deepSearch,
             dealValidator,
           },
-          maxSteps: 5, // Allow multi-step reasoning
+          maxSteps: 3, // Reduced from 5 to prevent timeouts
         } as unknown as Parameters<typeof generateText>[0]);
         
         text = response.text;
