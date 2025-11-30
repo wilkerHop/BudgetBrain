@@ -46,8 +46,39 @@ export async function analyzeBudget(userRequest: string, budget: number) {
       }
     }
 
+    // Sanitize steps for client-side consumption (Next.js serialization)
+    interface ToolCall {
+      toolName: string;
+      args: unknown;
+      toolCallId: string;
+    }
+
+    interface ToolResult {
+      toolName: string;
+      toolCallId: string;
+      output: unknown;
+    }
+
+    interface Step {
+      toolCalls?: ToolCall[];
+      toolResults?: ToolResult[];
+    }
+
+    const sanitizedSteps = steps ? (steps as unknown as Step[]).map(step => ({
+      toolCalls: step.toolCalls ? step.toolCalls.map((tc) => ({
+        toolName: tc.toolName,
+        args: tc.args,
+        toolCallId: tc.toolCallId
+      })) : [],
+      toolResults: step.toolResults ? step.toolResults.map((tr) => ({
+        toolName: tr.toolName,
+        toolCallId: tr.toolCallId,
+        output: tr.output
+      })) : []
+    })) : [];
+
     // 3. Save to Cache
-    await setCachedResult(userRequest, budget, text, steps as unknown as Prisma.InputJsonValue);
+    await setCachedResult(userRequest, budget, text, sanitizedSteps as unknown as Prisma.InputJsonValue);
 
     // 4. Persist to DB (DealDossier)
     // Create a placeholder user if not exists (for MVP)
@@ -65,7 +96,6 @@ export async function analyzeBudget(userRequest: string, budget: number) {
       }
     });
 
-    // Attempt to extract products from tool results to save VettedProducts
     // Attempt to extract products from tool results to save VettedProducts
     if (steps) {
       for (const step of steps) {
@@ -102,37 +132,6 @@ export async function analyzeBudget(userRequest: string, budget: number) {
         }
       }
     }
-
-    // Sanitize steps for client-side consumption (Next.js serialization)
-    interface ToolCall {
-      toolName: string;
-      args: unknown;
-      toolCallId: string;
-    }
-
-    interface ToolResult {
-      toolName: string;
-      toolCallId: string;
-      output: unknown;
-    }
-
-    interface Step {
-      toolCalls?: ToolCall[];
-      toolResults?: ToolResult[];
-    }
-
-    const sanitizedSteps = steps ? (steps as unknown as Step[]).map(step => ({
-      toolCalls: step.toolCalls ? step.toolCalls.map((tc) => ({
-        toolName: tc.toolName,
-        args: tc.args,
-        toolCallId: tc.toolCallId
-      })) : [],
-      toolResults: step.toolResults ? step.toolResults.map((tr) => ({
-        toolName: tr.toolName,
-        toolCallId: tr.toolCallId,
-        output: tr.output
-      })) : []
-    })) : [];
 
     return { result: text, steps: sanitizedSteps };
   } catch (error) {
