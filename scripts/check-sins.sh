@@ -35,7 +35,7 @@ FILES=$(find src -name "*.ts" -not -name "*.test.ts" -not -name "layout.tsx" -no
 
 for file in $FILES; do
   # Check if file exports a function
-  if grep -q "export function" "$file" || grep -q "export const .* = .*=>" "$file"; then
+  if grep -qE "export (async )?function" "$file" || grep -q "export const .* = .*=>" "$file"; then
     TEST_FILE="${file%.ts}.test.ts"
     if [ ! -f "$TEST_FILE" ]; then
       # Check if .test.tsx exists (for components)
