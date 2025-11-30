@@ -34,68 +34,84 @@ export default function Home() {
 
       if (response.steps) {
         for (const step of response.steps) {
+          if (typeof step !== 'object' || step === null) continue;
+
           // Log Tool Calls
-          if (step.toolCalls && step.toolCalls.length > 0) {
-            for (const call of step.toolCalls) {
-              newLogs.push(`🛠️ Calling tool: ${call.toolName}`);
-              if (call.toolName === 'deepSearch') {
-                setStatus('searching');
-              } else if (call.toolName === 'dealValidator') {
-                setStatus('validating');
-              }
-            }
+          if ('toolCalls' in step) {
+             const toolCalls = (step as { toolCalls: unknown[] }).toolCalls;
+             if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+                for (const call of toolCalls) {
+                  if (typeof call === 'object' && call !== null && 'toolName' in call) {
+                    const toolName = (call as { toolName: string }).toolName;
+                    newLogs.push(`🛠️ Calling tool: ${toolName}`);
+                    if (toolName === 'deepSearch') {
+                      setStatus('searching');
+                    } else if (toolName === 'dealValidator') {
+                      setStatus('validating');
+                    }
+                  }
+                }
+             }
           }
 
           // Log Tool Results and Extract Deals
-          if (step.toolResults && step.toolResults.length > 0) {
-            for (const result of step.toolResults) {
-              newLogs.push(`✅ Tool ${result.toolName} completed.`);
-              
-              if (result.toolName === 'deepSearch') {
-                const searchResults = result.output as SearchResult;
-                if (Array.isArray(searchResults)) {
-                  newLogs.push(`Found ${searchResults.length} potential candidates.`);
-                  // Map search results to deals
-                  searchResults.forEach((item) => {
-                    if (item.url && item.title) {
-                      foundDeals.push({
-                        title: item.title,
-                        price: 'Checking...', // Placeholder
-                        url: item.url,
-                        source: new URL(item.url).hostname.replace('www.', ''),
-                      });
-                    }
-                  });
-                }
-              }
-
-              if (result.toolName === 'dealValidator') {
-                const validatorResult = result.output as ValidatorResult;
+          if ('toolResults' in step) {
+            const toolResults = (step as { toolResults: unknown[] }).toolResults;
+            if (Array.isArray(toolResults) && toolResults.length > 0) {
+              for (const result of toolResults) {
+                if (typeof result !== 'object' || result === null || !('toolName' in result) || !('output' in result)) continue;
                 
-                if ('error' in validatorResult) {
-                     newLogs.push(`Validation failed: ${validatorResult.error}`);
-                } else {
-                    newLogs.push(`Verified: ${validatorResult.title.substring(0, 40)}...`);
-                    
-                    // Update existing deal or add new
-                    const existingIndex = foundDeals.findIndex(d => d.url === validatorResult.url);
-                    const existingDeal = foundDeals[existingIndex];
-                    
-                    if (existingIndex >= 0 && existingDeal) {
-                      foundDeals[existingIndex] = {
-                        ...existingDeal,
-                        price: validatorResult.price || 'N/A',
-                        verified: validatorResult.verified,
-                        title: validatorResult.title || existingDeal.title,
-                      };
-                    } else {
-                       foundDeals.push({
-                        title: validatorResult.title || 'Unknown Product',
-                        price: validatorResult.price || 'N/A',
-                        url: validatorResult.url,
-                        verified: validatorResult.verified,
-                       });
-                    }
+                const toolName = (result as { toolName: string }).toolName;
+                const output = (result as { output: unknown }).output;
+
+                newLogs.push(`✅ Tool ${toolName} completed.`);
+                
+                if (toolName === 'deepSearch') {
+                  const searchResults = output as SearchResult;
+                  if (Array.isArray(searchResults)) {
+                    newLogs.push(`Found ${searchResults.length} potential candidates.`);
+                    // Map search results to deals
+                    searchResults.forEach((item) => {
+                      if (item.url && item.title) {
+                        foundDeals.push({
+                          title: item.title,
+                          price: 'Checking...', // Placeholder
+                          url: item.url,
+                          source: new URL(item.url).hostname.replace('www.', ''),
+                        });
+                      }
+                    });
+                  }
+                }
+
+                if (toolName === 'dealValidator') {
+                  const validatorResult = output as ValidatorResult;
+                  
+                  if ('error' in validatorResult) {
+                       newLogs.push(`Validation failed: ${validatorResult.error}`);
+                  } else {
+                      newLogs.push(`Verified: ${validatorResult.title.substring(0, 40)}...`);
+                      
+                      // Update existing deal or add new
+                      const existingIndex = foundDeals.findIndex(d => d.url === validatorResult.url);
+                      const existingDeal = foundDeals[existingIndex];
+                      
+                      if (existingIndex >= 0 && existingDeal) {
+                        foundDeals[existingIndex] = {
+                          ...existingDeal,
+                          price: validatorResult.price || 'N/A',
+                          verified: validatorResult.verified,
+                          title: validatorResult.title || existingDeal.title,
+                        };
+                      } else {
+                         foundDeals.push({
+                          title: validatorResult.title || 'Unknown Product',
+                          price: validatorResult.price || 'N/A',
+                          url: validatorResult.url,
+                          verified: validatorResult.verified,
+                         });
+                      }
+                  }
                 }
               }
             }

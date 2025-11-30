@@ -32,7 +32,7 @@ export async function analyzeBudget(userRequest: string, budget: number) {
             dealValidator,
           },
           maxSteps: 5, // Allow multi-step reasoning
-        });
+        } as unknown as Parameters<typeof generateText>[0]);
         
         text = response.text;
         steps = response.steps;
