@@ -17,18 +17,35 @@ export async function analyzeBudget(userRequest: string, budget: number) {
       return cached;
     }
 
-    // 2. Call AI Agent
-    const { text, steps } = await generateText({
-      model,
-      system: SYSTEM_PROMPT,
-      prompt: `User Request: "${userRequest}"\nBudget: $${budget}\n\nExecute the following steps:\n1. Search for products matching the request.\n2. Verify the price of the top candidates.\n3. Filter out products that are strictly over budget (unless within 10% stretch).\n4. Provide a final recommendation with justification.`,
-      tools: {
-        deepSearch,
-        dealValidator,
-      },
-      // @ts-expect-error maxSteps is missing from type definition but supported
-      maxSteps: 5, // Allow multi-step reasoning
-    });
+    // 2. Call AI Agent with Retry Logic
+    let text = '';
+    let steps: any[] = [];
+    
+    for (let i = 0; i < 3; i++) {
+      try {
+        const response = await generateText({
+          model,
+          system: SYSTEM_PROMPT,
+          prompt: `User Request: "${userRequest}"\nBudget: $${budget}\n\nExecute the following steps:\n1. Search for products matching the request.\n2. Verify the price of the top candidates.\n3. Filter out products that are strictly over budget (unless within 10% stretch).\n4. Provide a final recommendation with justification.`,
+          tools: {
+            deepSearch,
+            dealValidator,
+          },
+          // @ts-expect-error maxSteps is missing from type definition but supported
+          maxSteps: 5, // Allow multi-step reasoning
+        });
+        
+        text = response.text;
+        steps = response.steps;
+        break; // Success
+      } catch (error: any) {
+        console.error(`AI generation attempt ${i + 1} failed:`, error);
+        if (i === 2) throw error; // Rethrow on last attempt
+        
+        // Wait with exponential backoff (2s, 4s, 8s)
+        await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, i)));
+      }
+    }
 
     // 3. Save to Cache
     await setCachedResult(userRequest, budget, text, steps as unknown as Prisma.InputJsonValue);
