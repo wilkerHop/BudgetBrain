@@ -62,10 +62,13 @@ describe('analyzeBudget Action', () => {
 
     const promise = analyzeBudget('fail', 100);
     
+    // Attach the expectation immediately to catch the rejection
+    const expectation = expect(promise).rejects.toThrow('Failed to analyze budget');
+    
     // Fast-forward through retries
     await vi.runAllTimersAsync();
 
-    await expect(promise).rejects.toThrow('Failed to analyze budget');
+    await expectation;
     expect(generateText).toHaveBeenCalledTimes(3);
   });
 });
