@@ -19,7 +19,7 @@ export async function analyzeBudget(userRequest: string, budget: number) {
 
     // 2. Call AI Agent with Retry Logic
     let text = '';
-    let steps: any[] = [];
+    let steps: unknown[] = [];
     
     for (let i = 0; i < 3; i++) {
       try {
@@ -31,14 +31,13 @@ export async function analyzeBudget(userRequest: string, budget: number) {
             deepSearch,
             dealValidator,
           },
-          // @ts-expect-error maxSteps is missing from type definition but supported
           maxSteps: 5, // Allow multi-step reasoning
         });
         
         text = response.text;
         steps = response.steps;
         break; // Success
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`AI generation attempt ${i + 1} failed:`, error);
         if (i === 2) throw error; // Rethrow on last attempt
         
@@ -67,25 +66,36 @@ export async function analyzeBudget(userRequest: string, budget: number) {
     });
 
     // Attempt to extract products from tool results to save VettedProducts
+    // Attempt to extract products from tool results to save VettedProducts
     if (steps) {
       for (const step of steps) {
-        if (step.toolResults) {
-          for (const result of step.toolResults) {
-            if (result.toolName === 'dealValidator') {
-              const val = result.output as ValidatorResult; // ValidatorResult
-              if ('url' in val && !('error' in val)) {
-                 await db.vettedProduct.create({
-                   data: {
-                     dossierId: dossier.id,
-                     name: val.title || 'Unknown',
-                     price: parseFloat(val.price.replace(/[^0-9.]/g, '')) || 0,
-                     currency: 'USD', // Assumption
-                     url: val.url,
-                     verificationScore: val.verified ? 100 : 0,
-                     sentimentSummary: 'Pending analysis',
-                     budgetGap: budget - (parseFloat(val.price.replace(/[^0-9.]/g, '')) || 0),
-                   }
-                 });
+        // Type guard to check if step has toolResults
+        if (typeof step === 'object' && step !== null && 'toolResults' in step) {
+          const toolResults = (step as { toolResults: unknown[] }).toolResults;
+          if (Array.isArray(toolResults)) {
+            for (const result of toolResults) {
+              if (
+                typeof result === 'object' &&
+                result !== null &&
+                'toolName' in result &&
+                'output' in result &&
+                (result as { toolName: unknown }).toolName === 'dealValidator'
+              ) {
+                const val = (result as { output: unknown }).output as ValidatorResult; // ValidatorResult
+                if ('url' in val && !('error' in val)) {
+                   await db.vettedProduct.create({
+                     data: {
+                       dossierId: dossier.id,
+                       name: val.title || 'Unknown',
+                       price: parseFloat(val.price.replace(/[^0-9.]/g, '')) || 0,
+                       currency: 'USD', // Assumption
+                       url: val.url,
+                       verificationScore: val.verified ? 100 : 0,
+                       sentimentSummary: 'Pending analysis',
+                       budgetGap: budget - (parseFloat(val.price.replace(/[^0-9.]/g, '')) || 0),
+                     }
+                   });
+                }
               }
             }
           }

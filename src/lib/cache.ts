@@ -21,8 +21,7 @@ export async function getCachedResult(query: string, budget: number) {
     if (isFresh) {
       return {
         result: cacheEntry.result,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        steps: cacheEntry.steps as unknown as any[], // Cast JSON to unknown then to expected type (or define Step type)
+        steps: cacheEntry.steps as unknown as unknown[], // Cast JSON to unknown then to unknown[]
       };
     }
   }
