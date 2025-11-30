@@ -11,6 +11,24 @@ vi.mock('ai', () => ({
 vi.mock('@/lib/ai/tools/search', () => ({ deepSearch: {} }));
 vi.mock('@/lib/ai/tools/validator', () => ({ dealValidator: {} }));
 vi.mock('@/lib/ai/config', () => ({ model: {}, SYSTEM_PROMPT: 'prompt' }));
+vi.mock('@/lib/cache', () => ({
+  getCachedResult: vi.fn(),
+  setCachedResult: vi.fn(),
+}));
+vi.mock('@/lib/db', () => ({
+  db: {
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
+    dealDossier: {
+      create: vi.fn().mockResolvedValue({ id: 'dossier-id' }),
+    },
+    vettedProduct: {
+      create: vi.fn(),
+    },
+  },
+}));
 
 describe('analyzeBudget Action', () => {
   it('should call generateText with correct prompt including budget', async () => {
@@ -18,6 +36,9 @@ describe('analyzeBudget Action', () => {
       text: 'Analysis result',
       steps: [],
     });
+
+    const { db } = await import('@/lib/db');
+    (db.user.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'user-id' });
 
     const result = await analyzeBudget('gaming mouse', 100);
 
