@@ -103,7 +103,21 @@ export async function analyzeBudget(userRequest: string, budget: number) {
       }
     }
 
-    return { result: text, steps };
+    // Sanitize steps for client-side consumption (Next.js serialization)
+    const sanitizedSteps = steps ? (steps as any[]).map(step => ({
+      toolCalls: step.toolCalls ? step.toolCalls.map((tc: any) => ({
+        toolName: tc.toolName,
+        args: tc.args,
+        toolCallId: tc.toolCallId
+      })) : [],
+      toolResults: step.toolResults ? step.toolResults.map((tr: any) => ({
+        toolName: tr.toolName,
+        toolCallId: tr.toolCallId,
+        output: tr.output
+      })) : []
+    })) : [];
+
+    return { result: text, steps: sanitizedSteps };
   } catch (error) {
     console.error('Budget analysis failed:', error);
     throw new Error('Failed to analyze budget');
